@@ -1,0 +1,1 @@
+require('./')({ container: document.querySelector('#editor') })

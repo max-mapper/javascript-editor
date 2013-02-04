@@ -1,0 +1,16 @@
+{
+  "name": "script-edit",
+  "version": "0.0.1",
+  "description": "codemirror + esprima powered html5 javascript editor component",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:maxogden/script-edit.git"
+  },
+  "dependencies": {
+    "extend": "1.1.3",
+    "inherits": "1.0.0"
+  },
+  "engines": {
+    "node": "0.8.x"
+  }
+}
