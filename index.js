@@ -24,7 +24,7 @@ function Editor(opts) {
   	updateInterval: 500,
   	dragAndDrop: true
   }
-  defaults.onChange = function () {
+  defaults.onChange = function (e) {
 	  self.emit('change')
 		if (self.interval) clearTimeout( self.interval )
 		self.interval = setTimeout( self.update.bind(self), self.opts.updateInterval )
