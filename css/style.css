@@ -5,6 +5,8 @@ html, body, #editor { height: 100%; }
 /* mysterious pre */
 body > pre { display: none } 
 
+.left, .right { height: 100%; overflow: visible; display: block; float: left; position: relative; width: 50%; }
+.right { background: #eee; }
 /* codemirror */
 .CodeMirror { font-size:20px; }
 

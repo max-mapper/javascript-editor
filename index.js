@@ -13,10 +13,12 @@ module.exports = function(opts) {
 function Editor(opts) {
   var self = this
   if (!opts) opts = {}
-
+  if (!opts.container) opts.container = document.body
+  var left = opts.container.querySelector('.left')
+  var right = opts.container.querySelector('.right')
+  if (left) opts.container = left
   var defaults = {
     value: "// hello world\n",
-    container: document.body,
     mode: "javascript",
     lineNumbers: true,
     autofocus: (window === window.top),
@@ -39,6 +41,14 @@ function Editor(opts) {
   })
   this.element = this.editor.getWrapperElement()
   this.errorLines = []
+  if (right) {
+    this.results = CodeMirror(right, {
+      mode: 'javascript',
+      tabSize: 2,
+      readOnly: 'nocursor'
+    })
+    this.results.setOption("theme", 'mistakes')
+  }
   this.update()
   if (this.opts.dragAndDrop) this.addDropHandler()
 }
@@ -53,26 +63,36 @@ Editor.prototype.validate = function(value) {
   var self = this
   
   while ( self.errorLines.length > 0 ) {
-    self.editor.removeLineClass( self.errorLines.shift(), 'background', 'errorLine' )
+    self.editor.removeLineClass( self.errorLines.shift().num, 'background', 'errorLine' )
   }
-
+  
   try {
-    var result = esprima.parse( value, { tolerant: true, loc: true } ).errors;
+    var result = esprima.parse( value, { tolerant: true, loc: true } ).errors
     for ( var i = 0; i < result.length; i ++ ) {
-      var error = result[ i ];
-      var lineNumber = error.lineNumber - 1;
-      self.errorLines.push( lineNumber );
-      self.editor.addLineClass( lineNumber, 'background', 'errorLine' );
+      var error = result[ i ]
+      var lineNumber = error.lineNumber - 1
+      self.errorLines.push( {num: lineNumber, message: error.message} )
+      self.editor.addLineClass( lineNumber, 'background', 'errorLine' )
     }
-
+    
   } catch ( error ) {
-    var lineNumber = error.lineNumber - 1;
-    self.errorLines.push( lineNumber );
-    self.editor.addLineClass( lineNumber, 'background', 'errorLine' );
+    var lineNumber = error.lineNumber - 1
+    self.errorLines.push( {num: lineNumber, message: error.message} )
+    self.editor.addLineClass( lineNumber, 'background', 'errorLine' )
   }
-
-  return self.errorLines.length === 0;
-
+  
+  if (this.results) {
+    if (self.errorLines.length === 0) return this.results.setValue('')
+    var numLines = self.errorLines[self.errorLines.length - 1].num
+    var lines = []
+    for (var i = 0; i < numLines; i++) lines[i] = ''
+    self.errorLines.map(function(errLine) {
+      lines[errLine.num] = errLine.message
+    })
+    this.results.setValue(lines.join('\n'))
+  }
+  
+  return self.errorLines.length === 0
 }
 
 Editor.prototype.addDropHandler = function () {
