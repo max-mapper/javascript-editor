@@ -17,7 +17,7 @@
     "browservefy": "0.0.9"
   },
   "scripts": {
-    "start": "./node_modules/browservefy/bin/browservefy demo.js 8080 --browserify=./node_modules/browserify/bin/cmd.js -- -d"
+    "start": "./node_modules/browservefy/bin/browservefy demo.js:bundle.js 8080 --browserify=./node_modules/browserify/bin/cmd.js -- -d"
   },
   "engines": {
     "node": "0.8.x"
