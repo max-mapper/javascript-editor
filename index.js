@@ -1,8 +1,9 @@
 var events = require('events')
 var inherits = require('inherits')
 var extend = require('extend')
-var esprima = require('./esprima')
-var CodeMirror = require('./codemirror')
+var esprima = require('esprima')
+var CodeMirror = require('codemirror')
+// load JS support for CodeMirror:
 require('./javascript')(CodeMirror)
 
 module.exports = function(opts) {
@@ -12,27 +13,42 @@ module.exports = function(opts) {
 function Editor(opts) {
   var self = this
   if (!opts) opts = {}
+  if (!opts.container) opts.container = document.body
+  var left = opts.container.querySelector('.left')
+  var right = opts.container.querySelector('.right')
+  if (left) opts.container = left
   var defaults = {
-  	value: "// hello world\n",
-  	container: document.body,
-  	mode: "javascript",
-  	lineNumbers: true,
-  	matchBrackets: true,
-  	indentWithTabs: false,
-  	tabSize: 2,
-  	indentUnit: 2,
-  	updateInterval: 500,
-  	dragAndDrop: true
+    value: "// hello world\n",
+    mode: "javascript",
+    lineNumbers: true,
+    autofocus: (window === window.top),
+    matchBrackets: true,
+    indentWithTabs: false,
+    smartIndent: true,
+    tabSize: 2,
+    indentUnit: 2,
+    updateInterval: 500,
+    dragAndDrop: true
   }
-  defaults.onChange = function (e) {
-	  self.emit('change')
-		if (self.interval) clearTimeout( self.interval )
-		self.interval = setTimeout( self.update.bind(self), self.opts.updateInterval )
-	}
-	this.opts = extend({}, defaults, opts)
+  this.opts = extend({}, defaults, opts)
   this.editor = CodeMirror( this.opts.container, this.opts )
+  this.editor.setOption("theme", "mistakes") // borrowed from mistakes.io
+  this.editor.setCursor(this.editor.lineCount(), 0)
+  this.editor.on('change', function (e) {
+    self.emit('change')
+    if (self.interval) clearTimeout( self.interval )
+    self.interval = setTimeout( self.update.bind(self), self.opts.updateInterval )
+  })
   this.element = this.editor.getWrapperElement()
   this.errorLines = []
+  if (right) {
+    this.results = CodeMirror(right, {
+      mode: 'javascript',
+      tabSize: 2,
+      readOnly: 'nocursor'
+    })
+    this.results.setOption("theme", 'mistakes')
+  }
   this.update()
   if (this.opts.dragAndDrop) this.addDropHandler()
 }
@@ -46,27 +62,37 @@ Editor.prototype.update = function() {
 Editor.prototype.validate = function(value) {
   var self = this
   
-	while ( self.errorLines.length > 0 ) {
-		self.editor.setLineClass( self.errorLines.shift(), null, null );
-	}
-
-	try {
-		var result = esprima.parse( value, { tolerant: true, loc: true } ).errors;
-		for ( var i = 0; i < result.length; i ++ ) {
-			var error = result[ i ];
-			var lineNumber = error.lineNumber - 1;
-			self.errorLines.push( lineNumber );
-			self.editor.setLineClass( lineNumber, null, 'errorLine' );
-		}
-
-	} catch ( error ) {
-		var lineNumber = error.lineNumber - 1;
-		self.errorLines.push( lineNumber );
-		self.editor.setLineClass( lineNumber, null, 'errorLine' );
-	}
-
-	return self.errorLines.length === 0;
-
+  while ( self.errorLines.length > 0 ) {
+    self.editor.removeLineClass( self.errorLines.shift().num, 'background', 'errorLine' )
+  }
+  
+  try {
+    var result = esprima.parse( value, { tolerant: true, loc: true } ).errors
+    for ( var i = 0; i < result.length; i ++ ) {
+      var error = result[ i ]
+      var lineNumber = error.lineNumber - 1
+      self.errorLines.push( {num: lineNumber, message: error.message} )
+      self.editor.addLineClass( lineNumber, 'background', 'errorLine' )
+    }
+    
+  } catch ( error ) {
+    var lineNumber = error.lineNumber - 1
+    self.errorLines.push( {num: lineNumber, message: error.message} )
+    self.editor.addLineClass( lineNumber, 'background', 'errorLine' )
+  }
+  
+  if (this.results) {
+    if (self.errorLines.length === 0) return this.results.setValue('')
+    var numLines = self.errorLines[self.errorLines.length - 1].num
+    var lines = []
+    for (var i = 0; i < numLines; i++) lines[i] = ''
+    self.errorLines.map(function(errLine) {
+      lines[errLine.num] = errLine.message
+    })
+    this.results.setValue(lines.join('\n'))
+  }
+  
+  return self.errorLines.length === 0
 }
 
 Editor.prototype.addDropHandler = function () {

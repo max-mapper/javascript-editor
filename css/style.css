@@ -1,0 +1,15 @@
+body { margin: 0; padding: 0; }
+
+html, body, #editor { height: 100%; }
+
+/* mysterious pre */
+body > pre { display: none } 
+
+.left, .right { height: 100%; overflow: visible; display: block; float: left; position: relative; width: 50%; }
+.right { background: #eee; }
+/* codemirror */
+.CodeMirror { font-size:20px; }
+
+@media all and (max-width: 800px) { .CodeMirror { font-size: 14px !important; } }
+
+#editor .CodeMirror .errorLine { background: rgba(255,0,0,0.25); }
