@@ -1,8 +1,9 @@
 var events = require('events')
 var inherits = require('inherits')
 var extend = require('extend')
-var esprima = require('./esprima')
-var CodeMirror = require('./codemirror')
+var esprima = require('esprima')
+var CodeMirror = require('codemirror')
+// load JS support for CodeMirror:
 require('./javascript')(CodeMirror)
 
 module.exports = function(opts) {
@@ -12,25 +13,30 @@ module.exports = function(opts) {
 function Editor(opts) {
   var self = this
   if (!opts) opts = {}
+
   var defaults = {
-  	value: "// hello world\n",
-  	container: document.body,
-  	mode: "javascript",
-  	lineNumbers: true,
-  	matchBrackets: true,
-  	indentWithTabs: false,
-  	tabSize: 2,
-  	indentUnit: 2,
-  	updateInterval: 500,
-  	dragAndDrop: true
+    value: "// hello world\n",
+    container: document.body,
+    mode: "javascript",
+    lineNumbers: true,
+    autofocus: (window === window.top),
+    matchBrackets: true,
+    indentWithTabs: false,
+    smartIndent: true,
+    tabSize: 2,
+    indentUnit: 2,
+    updateInterval: 500,
+    dragAndDrop: true
   }
-  defaults.onChange = function (e) {
-	  self.emit('change')
-		if (self.interval) clearTimeout( self.interval )
-		self.interval = setTimeout( self.update.bind(self), self.opts.updateInterval )
-	}
-	this.opts = extend({}, defaults, opts)
+  this.opts = extend({}, defaults, opts)
   this.editor = CodeMirror( this.opts.container, this.opts )
+  this.editor.setOption("theme", "mistakes") // borrowed from mistakes.io
+  this.editor.setCursor(this.editor.lineCount(), 0)
+  this.editor.on('change', function (e) {
+    self.emit('change')
+    if (self.interval) clearTimeout( self.interval )
+    self.interval = setTimeout( self.update.bind(self), self.opts.updateInterval )
+  })
   this.element = this.editor.getWrapperElement()
   this.errorLines = []
   this.update()
@@ -46,26 +52,26 @@ Editor.prototype.update = function() {
 Editor.prototype.validate = function(value) {
   var self = this
   
-	while ( self.errorLines.length > 0 ) {
-		self.editor.setLineClass( self.errorLines.shift(), null, null );
-	}
+  while ( self.errorLines.length > 0 ) {
+    self.editor.removeLineClass( self.errorLines.shift(), 'background', 'errorLine' )
+  }
 
-	try {
-		var result = esprima.parse( value, { tolerant: true, loc: true } ).errors;
-		for ( var i = 0; i < result.length; i ++ ) {
-			var error = result[ i ];
-			var lineNumber = error.lineNumber - 1;
-			self.errorLines.push( lineNumber );
-			self.editor.setLineClass( lineNumber, null, 'errorLine' );
-		}
+  try {
+    var result = esprima.parse( value, { tolerant: true, loc: true } ).errors;
+    for ( var i = 0; i < result.length; i ++ ) {
+      var error = result[ i ];
+      var lineNumber = error.lineNumber - 1;
+      self.errorLines.push( lineNumber );
+      self.editor.addLineClass( lineNumber, 'background', 'errorLine' );
+    }
 
-	} catch ( error ) {
-		var lineNumber = error.lineNumber - 1;
-		self.errorLines.push( lineNumber );
-		self.editor.setLineClass( lineNumber, null, 'errorLine' );
-	}
+  } catch ( error ) {
+    var lineNumber = error.lineNumber - 1;
+    self.errorLines.push( lineNumber );
+    self.editor.addLineClass( lineNumber, 'background', 'errorLine' );
+  }
 
-	return self.errorLines.length === 0;
+  return self.errorLines.length === 0;
 
 }
 

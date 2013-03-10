@@ -1,5 +1,6 @@
 module.exports = function(CodeMirror) {
   // TODO actually recognize syntax of TypeScript constructs
+
   CodeMirror.defineMode("javascript", function(config, parserConfig) {
     var indentUnit = config.indentUnit;
     var jsonMode = parserConfig.json;
@@ -11,7 +12,7 @@ module.exports = function(CodeMirror) {
       function kw(type) {return {type: type, style: "keyword"};}
       var A = kw("keyword a"), B = kw("keyword b"), C = kw("keyword c");
       var operator = kw("operator"), atom = {type: "atom", style: "atom"};
-    
+
       var jsKeywords = {
         "if": A, "while": A, "with": A, "else": B, "do": B, "try": B, "finally": B,
         "return": C, "break": C, "continue": C, "new": C, "delete": C, "throw": C,
@@ -52,7 +53,7 @@ module.exports = function(CodeMirror) {
       return jsKeywords;
     }();
 
-    var isOperatorChar = /[+\-*&%=<>!?|]/;
+    var isOperatorChar = /[+\-*&%=<>!?|~^]/;
 
     function chain(stream, state, f) {
       state.tokenize = f;
@@ -111,8 +112,8 @@ module.exports = function(CodeMirror) {
         }
       }
       else if (ch == "#") {
-          stream.skipToEnd();
-          return ret("error", "error");
+        stream.skipToEnd();
+        return ret("error", "error");
       }
       else if (isOperatorChar.test(ch)) {
         stream.eatWhile(isOperatorChar);
@@ -169,7 +170,7 @@ module.exports = function(CodeMirror) {
       // Communicate our context to the combinators.
       // (Less wasteful than consing up a hundred closures on every call.)
       cx.state = state; cx.stream = stream; cx.marked = null, cx.cc = cc;
-  
+
       if (!state.lexical.hasOwnProperty("align"))
         state.lexical.align = true;
 
@@ -196,12 +197,19 @@ module.exports = function(CodeMirror) {
       return true;
     }
     function register(varname) {
+      function inList(list) {
+        for (var v = list; v; v = v.next)
+          if (v.name == varname) return true;
+        return false;
+      }
       var state = cx.state;
       if (state.context) {
         cx.marked = "def";
-        for (var v = state.localVars; v; v = v.next)
-          if (v.name == varname) return;
+        if (inList(state.localVars)) return;
         state.localVars = {name: varname, next: state.localVars};
+      } else {
+        if (inList(state.globalVars)) return;
+        state.globalVars = {name: varname, next: state.globalVars};
       }
     }
 
@@ -235,7 +243,7 @@ module.exports = function(CodeMirror) {
     poplex.lex = true;
 
     function expect(wanted) {
-      return function expecting(type) {
+      return function(type) {
         if (type == wanted) return cont();
         else if (wanted == ";") return pass();
         else return cont(arguments.callee);
@@ -274,10 +282,13 @@ module.exports = function(CodeMirror) {
       if (type.match(/[;\}\)\],]/)) return pass();
       return pass(expression);
     }
-    
+
     function maybeoperator(type, value) {
-      if (type == "operator" && /\+\+|--/.test(value)) return cont(maybeoperator);
-      if (type == "operator" && value == "?") return cont(expression, expect(":"), expression);
+      if (type == "operator") {
+        if (/\+\+|--/.test(value)) return cont(maybeoperator);
+        if (value == "?") return cont(expression, expect(":"), expression);
+        return cont(expression);
+      }
       if (type == ";") return;
       if (type == "(") return cont(pushlex(")"), commasep(expression, ")"), poplex, maybeoperator);
       if (type == ".") return cont(property, maybeoperator);
@@ -292,6 +303,7 @@ module.exports = function(CodeMirror) {
     }
     function objprop(type) {
       if (type == "variable") cx.marked = "property";
+      else if (type == "number" || type == "string") cx.marked = type + " property";
       if (atomicTypes.hasOwnProperty(type)) return cont(expect(":"), expression);
     }
     function commasep(what, end) {
@@ -300,7 +312,7 @@ module.exports = function(CodeMirror) {
         if (type == end) return cont();
         return cont(expect(end));
       }
-      return function commaSeparated(type) {
+      return function(type) {
         if (type == end) return cont();
         else return pass(what, proceed);
       };
@@ -334,7 +346,7 @@ module.exports = function(CodeMirror) {
       if (type == "variable") return cont(formaybein);
       return cont(forspec2);
     }
-    function formaybein(type, value) {
+    function formaybein(_type, value) {
       if (value == "in") return cont(expression);
       return cont(maybeoperator, forspec2);
     }
@@ -364,6 +376,7 @@ module.exports = function(CodeMirror) {
           cc: [],
           lexical: new JSLexical((basecolumn || 0) - indentUnit, 0, "block", false),
           localVars: parserConfig.localVars,
+          globalVars: parserConfig.globalVars,
           context: parserConfig.localVars && {vars: parserConfig.localVars},
           indented: 0
         };
@@ -406,6 +419,9 @@ module.exports = function(CodeMirror) {
   });
 
   CodeMirror.defineMIME("text/javascript", "javascript");
+  CodeMirror.defineMIME("text/ecmascript", "javascript");
+  CodeMirror.defineMIME("application/javascript", "javascript");
+  CodeMirror.defineMIME("application/ecmascript", "javascript");
   CodeMirror.defineMIME("application/json", {name: "javascript", json: true});
   CodeMirror.defineMIME("text/typescript", { name: "javascript", typescript: true });
   CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript: true });
