@@ -20,9 +20,9 @@ npm install javascript-editor
 ```
 
 ```javascript
-var editor = require('javascript-editor')
+var createEditor = require('javascript-editor')
 
-editor({ container: document.querySelector('#editor') })
+var editor = createEditor({ container: document.querySelector('#editor') })
 
 editor.on('change', function() {
   var value = editor.getValue()

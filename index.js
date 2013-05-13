@@ -115,3 +115,11 @@ Editor.prototype.addDropHandler = function () {
   }, false )
   
 }
+
+Editor.prototype.getValue = function() {
+  return this.editor.getValue()
+}
+
+Editor.prototype.setValue = function(value) {
+  return this.editor.setValue(value)
+}
