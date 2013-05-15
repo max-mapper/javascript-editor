@@ -1,6 +1,6 @@
 {
   "name": "javascript-editor",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "codemirror + esprima powered html5 javascript editor component",
   "repository": {
     "type": "git",
