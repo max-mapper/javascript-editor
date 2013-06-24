@@ -1,3 +1,4 @@
+var path = require('path')
 var events = require('events')
 var inherits = require('inherits')
 var extend = require('extend')
@@ -28,7 +29,8 @@ function Editor(opts) {
     tabSize: 2,
     indentUnit: 2,
     updateInterval: 500,
-    dragAndDrop: true
+    dragAndDrop: true,
+    injectStyles: false
   }
   this.opts = extend({}, defaults, opts)
   this.editor = CodeMirror( this.opts.container, this.opts )
@@ -51,9 +53,34 @@ function Editor(opts) {
   }
   this.update()
   if (this.opts.dragAndDrop) this.addDropHandler()
+  if (this.opts.injectStyles) {
+    // required for callback
+    window.__jsEditor = this;
+    injectStyles()
+  }
 }
 
 inherits(Editor, events.EventEmitter)
+
+function injectStyles() {
+  ['./css/codemirror.css','./css/style.css','./css/theme.css'].forEach(function(cssFile) {
+    var pathname = path.join(__dirname,cssFile)
+    injectStyle( pathname )
+  })
+}
+
+function injectStyle( pathname ) {
+  var fileref = document.createElement("link")
+  fileref.setAttribute("rel", "stylesheet")
+  fileref.setAttribute("type", "text/css")
+  fileref.setAttribute("href", pathname)
+  fileref.setAttribute("onload", "__jsEditor.refresh()")
+  document.getElementsByTagName("head")[0].appendChild(fileref)
+}
+
+Editor.prototype.refresh = function() {
+  this.editor.refresh()
+}
 
 Editor.prototype.update = function() {
   return this.validate(this.editor.getValue())
