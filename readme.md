@@ -42,9 +42,13 @@ var defaults = {
 	tabSize: 2,
 	indentUnit: 2,
 	updateInterval: 500,
-	dragAndDrop: true
+	dragAndDrop: true,
+	injectStyles: false,
 }
 ```
+
+### inject styles
+if you want to use the default styles automatically, use the option `injectStyles: true`, or manually include them yourself
 
 ## license
 
