@@ -27,6 +27,10 @@ var editor = createEditor({ container: document.querySelector('#editor') })
 editor.on('change', function() {
   var value = editor.getValue()
 })
+
+editor.on('valid', function(noErrors) {
+  // noErrors is a boolean
+})
 ```
 
 ### default options
