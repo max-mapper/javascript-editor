@@ -56,7 +56,9 @@ function Editor(opts) {
 inherits(Editor, events.EventEmitter)
 
 Editor.prototype.update = function() {
-  return this.validate(this.editor.getValue())
+  var hasErrors = this.validate(this.editor.getValue())
+  this.emit('valid', hasErrors)
+  return hasErrors
 }
 
 Editor.prototype.validate = function(value) {
