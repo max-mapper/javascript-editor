@@ -13,3 +13,5 @@ body > pre { display: none }
 @media all and (max-width: 800px) { .CodeMirror { font-size: 14px !important; } }
 
 #editor .CodeMirror .errorLine { background: rgba(255,0,0,0.25); }
+
+.CodeMirror-scroll { overflow: auto; }
