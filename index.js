@@ -1,3 +1,4 @@
+var path = require('path')
 var events = require('events')
 var inherits = require('inherits')
 var extend = require('extend')
@@ -20,6 +21,7 @@ function Editor(opts) {
   var defaults = {
     value: "// hello world\n",
     mode: "javascript",
+    theme: 'mistakes'
     lineNumbers: true,
     autofocus: (window === window.top),
     matchBrackets: true,
@@ -28,11 +30,12 @@ function Editor(opts) {
     tabSize: 2,
     indentUnit: 2,
     updateInterval: 500,
-    dragAndDrop: true
+    dragAndDrop: true,
+    injectStyles: false
   }
   this.opts = extend({}, defaults, opts)
   this.editor = CodeMirror( this.opts.container, this.opts )
-  this.editor.setOption("theme", "mistakes") // borrowed from mistakes.io
+  this.editor.setOption("theme", opts.theme)
   this.editor.setCursor(this.editor.lineCount(), 0)
   this.editor.on('change', function (e) {
     self.emit('change')
@@ -47,13 +50,38 @@ function Editor(opts) {
       tabSize: 2,
       readOnly: 'nocursor'
     })
-    this.results.setOption("theme", 'mistakes')
+    this.results.setOption("theme", opts.theme)
   }
   this.update()
   if (this.opts.dragAndDrop) this.addDropHandler()
+  if (this.opts.injectStyles) {
+    // required for callback
+    window.__jsEditor = this;
+    injectStyles()
+  }
 }
 
 inherits(Editor, events.EventEmitter)
+
+function injectStyles() {
+  ['./css/codemirror.css','./css/style.css','./css/theme.css'].forEach(function(cssFile) {
+    var pathname = path.join(__dirname,cssFile)
+    injectStyle( pathname )
+  })
+}
+
+function injectStyle( pathname ) {
+  var fileref = document.createElement("link")
+  fileref.setAttribute("rel", "stylesheet")
+  fileref.setAttribute("type", "text/css")
+  fileref.setAttribute("href", pathname)
+  fileref.setAttribute("onload", "__jsEditor.refresh()")
+  document.getElementsByTagName("head")[0].appendChild(fileref)
+}
+
+Editor.prototype.refresh = function() {
+  this.editor.refresh()
+}
 
 Editor.prototype.update = function() {
   var hasErrors = this.validate(this.editor.getValue())
