@@ -21,6 +21,7 @@ function Editor(opts) {
   var defaults = {
     value: "// hello world\n",
     mode: "javascript",
+    theme: 'mistakes',
     lineNumbers: true,
     autofocus: (window === window.top),
     matchBrackets: true,
@@ -34,7 +35,7 @@ function Editor(opts) {
   }
   this.opts = extend({}, defaults, opts)
   this.editor = CodeMirror( this.opts.container, this.opts )
-  this.editor.setOption("theme", "mistakes") // borrowed from mistakes.io
+  this.editor.setOption("theme", opts.theme)
   this.editor.setCursor(this.editor.lineCount(), 0)
   this.editor.on('change', function (e) {
     self.emit('change')
@@ -49,7 +50,7 @@ function Editor(opts) {
       tabSize: 2,
       readOnly: 'nocursor'
     })
-    this.results.setOption("theme", 'mistakes')
+    this.results.setOption("theme", opts.theme)
   }
   this.update()
   if (this.opts.dragAndDrop) this.addDropHandler()
