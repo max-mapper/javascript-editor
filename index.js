@@ -4,7 +4,7 @@ var extend = require('extend')
 var esprima = require('esprima')
 var CodeMirror = require('codemirror')
 // load JS support for CodeMirror:
-require('./javascript')(CodeMirror)
+require('codemirror/mode/javascript/javascript');
 
 module.exports = function(opts) {
   return new Editor(opts)
