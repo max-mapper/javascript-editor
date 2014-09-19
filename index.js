@@ -57,7 +57,7 @@ inherits(Editor, events.EventEmitter)
 
 Editor.prototype.update = function() {
   var hasErrors = this.validate(this.editor.getValue())
-  this.emit('valid', hasErrors)
+  this.emit('valid', hasErrors, this.ast)
   return hasErrors
 }
 
@@ -69,7 +69,9 @@ Editor.prototype.validate = function(value) {
   }
   
   try {
-    var result = esprima.parse( value, { tolerant: true, loc: true } ).errors
+    this.ast = esprima.parse( value, { tolerant: true, loc: true } );
+    var result = this.ast.errors
+
     for ( var i = 0; i < result.length; i ++ ) {
       var error = result[ i ]
       var lineNumber = error.lineNumber - 1
